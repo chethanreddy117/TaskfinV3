@@ -1,9 +1,6 @@
 # TaskFin - AI-Powered Bill Payment System
 
 > **Agent-based bill payment system** with AI orchestration, risk controls, and comprehensive audit logging.
-
-![Version](https://img.shields.io/badge/version-3.0-blue) ![Status](https://img.shields.io/badge/status-production--ready-green) ![License](https://img.shields.io/badge/license-MIT-blue)
-
 ---
 
 ## 🎯 Overview
