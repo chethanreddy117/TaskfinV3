@@ -56,12 +56,21 @@ class FakeRedis:
 
 def _create_redis_client():
     try:
-        client = redis.Redis(
-            host=settings.REDIS_HOST,
-            port=settings.REDIS_PORT,
-            decode_responses=True,
-            socket_connect_timeout=2,
-        )
+        # Prefer REDIS_URL if set (Railway provides this automatically)
+        if settings.REDIS_URL:
+            client = redis.from_url(
+                settings.REDIS_URL,
+                decode_responses=True,
+                socket_connect_timeout=2,
+            )
+        else:
+            client = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=settings.REDIS_PORT,
+                password=settings.REDIS_PASSWORD or None,
+                decode_responses=True,
+                socket_connect_timeout=2,
+            )
         client.ping()
         print("✅ Redis connected successfully")
         return client
