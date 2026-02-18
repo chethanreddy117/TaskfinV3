@@ -11,9 +11,9 @@ type Message = {
 const API = process.env.NEXT_PUBLIC_API_BASE 
   // || "http://localhost:8000/api/v1";
 // const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
-if (!API) {
-  throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
-}
+// if (!API) {
+//   throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
+// }
 
 export default function Home() {
   // ---------------- Auth ----------------
