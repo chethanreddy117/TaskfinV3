@@ -15,7 +15,7 @@ const API_base = process.env.NEXT_PUBLIC_API_BASE
 // if (!API) {
 //   throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
 // }
-const API = `${API_BASE}/api/v1`;
+const API = `${API_base}/api/v1`;
 
 export default function Home() {
   // ---------------- Auth ----------------
