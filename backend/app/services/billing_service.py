@@ -168,6 +168,44 @@ def find_bill_by_name(user_id: int, bill_name: str):
         db.close()
 
 
+def find_paid_bill_by_name(user_id: int, bill_name: str):
+    """
+    Find a PAID bill by name using fuzzy matching.
+    Used to detect 'already paid' scenarios.
+    Returns the best matching paid bill or None.
+    """
+    db: Session = SessionLocal()
+    try:
+        bills = db.query(Bill).filter(
+            Bill.user_id == user_id,
+            Bill.status == "PAID"
+        ).all()
+
+        if not bills:
+            return None
+
+        bill_name_lower = bill_name.lower()
+
+        # Exact match first
+        for bill in bills:
+            if bill.name.lower() == bill_name_lower:
+                return bill
+
+        # Fuzzy match
+        best_match = None
+        best_score = 0
+        for bill in bills:
+            score = fuzz.ratio(bill_name_lower, bill.name.lower())
+            if score > best_score:
+                best_score = score
+                best_match = bill
+
+        return best_match if best_score >= 70 else None
+
+    finally:
+        db.close()
+
+
 def find_any_bill_by_name(user_id: int, bill_name: str):
     """
     Find ANY bill (paid or unpaid) by name using fuzzy matching.
