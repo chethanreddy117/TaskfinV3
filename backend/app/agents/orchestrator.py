@@ -60,13 +60,21 @@ class Orchestrator:
                     data=None
                 )
             
-            # Handle confirmations if awaiting one
+            # Handle confirmations/cancellations — always check cancellation
+            # even if state expired, so "no" never falls through to UNKNOWN
+            if self._is_cancellation(message_lower):
+                return await self.financial_agent.handle(user_id, message)
+
             if state.get("awaiting_confirmation"):
                 if self._is_confirmation(message_lower):
                     return await self.financial_agent.handle(user_id, message)
-                elif self._is_cancellation(message_lower):
-                    return await self.financial_agent.handle(user_id, message)
-            
+                # Non-confirmation/cancellation while awaiting — remind user
+                return AgentResult(
+                    success=False,
+                    message="Please reply **yes** to confirm or **no** to cancel the pending payment.",
+                    data=None
+                )
+
             # Pattern-based intent detection for speed
             if self._is_list_bills(message_lower):
                 return await self.financial_agent.handle_list_bills(user_id)
