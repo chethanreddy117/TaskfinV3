@@ -116,6 +116,17 @@ class Orchestrator:
             if intent == "CHECK_RISK":
                 return await self.risk_agent.handle_risk_status(user_id)
             
+            if intent == "CONFIRMATION":
+                # "Yes" without context usually means "Yes, I want to pay/continue"
+                return await self.financial_agent.handle_list_bills(user_id)
+
+            if intent == "CANCELLATION":
+                return AgentResult(
+                    success=True,
+                    message="Okay! Let me know if there's anything else I can help you with.",
+                    data=None
+                )
+
             # Unknown intent
             return AgentResult(
                 success=False,
