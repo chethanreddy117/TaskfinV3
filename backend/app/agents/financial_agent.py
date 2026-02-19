@@ -200,8 +200,19 @@ class FinancialAgent:
                     data=None
                 )
         else:
-            # No bill name specified, pick first one
-            bill = bills[0]
+            # No bill name specified
+            # SAFETY CHECK: Only default if there's exactly one unpaid bill
+            if len(bills) == 1:
+                self._log(f"No keyword found. Defaulting to single unpaid bill: {bills[0].name}")
+                bill = bills[0]
+            else:
+                self._log("No keyword found and multiple bills exist. Asking for clarification.")
+                bill_list = "\n".join([f"• {b.name}: ₹{b.amount}" for b in bills])
+                return AgentResult(
+                    success=False,
+                    message=f"I found multiple unpaid bills. Which one would you like to pay?\n\n{bill_list}",
+                    data=None
+                )
 
         # Set confirmation state
         set_state(user_id, {
@@ -324,11 +335,20 @@ class FinancialAgent:
         """
         message_lower = message.lower()
 
+        self._log(f"Extracting keyword from: {message_lower}")
         # Strip common payment/filler words
         pattern = r"\b(" + "|".join([
             "pay", "payment", "bill", "bills", "the", "my",
             "make", "a", "an", "please", "settle", "clear"
         ]) + r")\b"
         keyword = re.sub(pattern, "", message_lower).strip()
+        self._log(f"Extracted keyword: '{keyword}'")
 
         return keyword if keyword else None
+
+    def _log(self, msg):
+        try:
+            with open("app/debug.log", "a") as f:
+                f.write(msg + "\n")
+        except:
+            pass
