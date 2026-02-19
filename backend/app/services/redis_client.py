@@ -43,6 +43,18 @@ class FakeRedis:
         self._store[key] = (str(new_val), None)
         return new_val
 
+    def incrby(self, key, amount):
+        entry = self._store.get(key)
+        current = 0
+        if entry:
+            try:
+                current = int(entry[0])
+            except (ValueError, TypeError):
+                current = 0
+        new_val = current + int(amount)
+        self._store[key] = (str(new_val), None)
+        return new_val
+
     def expire(self, key, seconds):
         import time
         if key in self._store:
