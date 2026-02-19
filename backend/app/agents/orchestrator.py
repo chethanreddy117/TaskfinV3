@@ -91,6 +91,18 @@ class Orchestrator:
             if self._is_check_risk(message_lower):
                 return await self.risk_agent.handle_risk_status(user_id)
             
+            # Standalone confirmation ("yes") -> Treat as "Show bills"
+            if self._is_confirmation(message_lower):
+                return await self.financial_agent.handle_list_bills(user_id)
+
+            # Standalone cancellation ("no") -> Polite exit
+            if self._is_cancellation(message_lower):
+                return AgentResult(
+                    success=True,
+                    message="Okay! Let me know if there's anything else I can help you with.",
+                    data=None
+                )
+            
             # Fallback to LLM intent detection for complex cases
             intent = await self._detect_intent_llm(message)
             
