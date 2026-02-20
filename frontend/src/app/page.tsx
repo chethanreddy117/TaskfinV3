@@ -16,8 +16,14 @@ type Message = {
   content: string;
 };
 
-const API =
-  process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000/api/v1";
+const API_base = process.env.NEXT_PUBLIC_API_BASE
+
+  // || "http://localhost:8000/api/v1";
+// const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+// if (!API) {
+//   throw new Error("NEXT_PUBLIC_API_BASE_URL is not defined");
+// }
+const API = `${API_base}/api/v1`;
 
 export default function Home() {
   const { getToken, isLoaded: authLoaded } = useAuth();
