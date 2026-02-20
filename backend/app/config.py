@@ -21,8 +21,11 @@ class Settings(BaseSettings):
     
     JWT_SECRET_KEY: str
     ANTHROPIC_API_KEY: str
+    CLERK_SECRET_KEY: str | None = None
     REDIS_HOST: str = "redis"
     REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str | None = None
+    REDIS_URL: str | None = None
     BACKEND_CORS_ORIGINS: str = "http://localhost:3000"
 
     @model_validator(mode='after')

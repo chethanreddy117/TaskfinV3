@@ -60,13 +60,21 @@ class Orchestrator:
                     data=None
                 )
             
-            # Handle confirmations if awaiting one
+            # Handle confirmations/cancellations — always check cancellation
+            # even if state expired, so "no" never falls through to UNKNOWN
+            if self._is_cancellation(message_lower):
+                return await self.financial_agent.handle(user_id, message)
+
             if state.get("awaiting_confirmation"):
                 if self._is_confirmation(message_lower):
                     return await self.financial_agent.handle(user_id, message)
-                elif self._is_cancellation(message_lower):
-                    return await self.financial_agent.handle(user_id, message)
-            
+                # Non-confirmation/cancellation while awaiting — remind user
+                return AgentResult(
+                    success=False,
+                    message="Please reply **yes** to confirm or **no** to cancel the pending payment.",
+                    data=None
+                )
+
             # Pattern-based intent detection for speed
             if self._is_list_bills(message_lower):
                 return await self.financial_agent.handle_list_bills(user_id)
@@ -82,6 +90,18 @@ class Orchestrator:
             
             if self._is_check_risk(message_lower):
                 return await self.risk_agent.handle_risk_status(user_id)
+            
+            # Standalone confirmation ("yes") -> Treat as "Show bills"
+            if self._is_confirmation(message_lower):
+                return await self.financial_agent.handle_list_bills(user_id)
+
+            # Standalone cancellation ("no") -> Polite exit
+            if self._is_cancellation(message_lower):
+                return AgentResult(
+                    success=True,
+                    message="Okay! Let me know if there's anything else I can help you with.",
+                    data=None
+                )
             
             # Fallback to LLM intent detection for complex cases
             intent = await self._detect_intent_llm(message)
@@ -108,6 +128,17 @@ class Orchestrator:
             if intent == "CHECK_RISK":
                 return await self.risk_agent.handle_risk_status(user_id)
             
+            if intent == "CONFIRMATION":
+                # "Yes" without context usually means "Yes, I want to pay/continue"
+                return await self.financial_agent.handle_list_bills(user_id)
+
+            if intent == "CANCELLATION":
+                return AgentResult(
+                    success=True,
+                    message="Okay! Let me know if there's anything else I can help you with.",
+                    data=None
+                )
+
             # Unknown intent
             return AgentResult(
                 success=False,

@@ -1,4 +1,4 @@
-from app.services.billing_service import get_unpaid_bills, pay_bill_by_id, get_account_balance, get_transaction_history, find_bill_by_name
+from app.services.billing_service import get_unpaid_bills, pay_bill_by_id, get_account_balance, get_transaction_history, find_bill_by_name, find_paid_bill_by_name
 from app.services.state_service import get_state, set_state, clear_state
 from app.agents.types import AgentResult
 from app.agents.errors import InvalidRequestError, InsufficientBalanceError
@@ -167,26 +167,52 @@ class FinancialAgent:
                 data=None
             )
 
-        # Try to extract bill name from message
-        bill_name_from_msg = self._extract_bill_name(message, bills)
+        # Try to extract bill keyword from message
+        bill_keyword = self._extract_bill_keyword(message)
         
-        if bill_name_from_msg:
-            # User specified a bill name, try to match it
-            matched_bill = find_bill_by_name(user_id, bill_name_from_msg)
-            
+        if bill_keyword:
+            # User specified a bill name, try to match unpaid first
+            matched_bill = find_bill_by_name(user_id, bill_keyword)
+
             if matched_bill:
                 bill = matched_bill
             else:
-                # No match found
+                # Not in unpaid list — check if it was already paid
+                paid_bill = find_paid_bill_by_name(user_id, bill_keyword)
+                if paid_bill:
+                    paid_on = paid_bill.updated_at.strftime("%d %b %Y") if getattr(paid_bill, "updated_at", None) else "recently"
+                    return AgentResult(
+                        success=False,
+                        message=(
+                            f"✅ Payment already done!\n\n"
+                            f"Your **{paid_bill.name}** bill of ₹{paid_bill.amount} "
+                            f"was paid on {paid_on}.\n\n"
+                            f"Would you like to pay a different bill?"
+                        ),
+                        data={"bill_name": paid_bill.name, "amount": paid_bill.amount, "status": "PAID"}
+                    )
+
+                # Not found anywhere — show unpaid list
                 bill_list = "\n".join([f"• {b.name} - ₹{b.amount}" for b in bills])
                 return AgentResult(
                     success=False,
-                    message=f"I couldn't find a bill matching '{bill_name_from_msg}'.\n\nYour unpaid bills:\n{bill_list}\n\nPlease specify which bill you'd like to pay.",
+                    message=f"I couldn't find a bill matching '{bill_keyword}'.\n\nYour unpaid bills:\n{bill_list}\n\nPlease specify which bill you'd like to pay.",
                     data=None
                 )
         else:
-            # No bill name specified, pick first one
-            bill = bills[0]
+            # No bill name specified
+            # SAFETY CHECK: Only default if there's exactly one unpaid bill
+            if len(bills) == 1:
+                self._log(f"No keyword found. Defaulting to single unpaid bill: {bills[0].name}")
+                bill = bills[0]
+            else:
+                self._log("No keyword found and multiple bills exist. Asking for clarification.")
+                bill_list = "\n".join([f"• {b.name}: ₹{b.amount}" for b in bills])
+                return AgentResult(
+                    success=False,
+                    message=f"I found multiple unpaid bills. Which one would you like to pay?\n\n{bill_list}",
+                    data=None
+                )
 
         # Set confirmation state
         set_state(user_id, {
@@ -301,30 +327,28 @@ class FinancialAgent:
             } for t in transactions]
         )
 
-    def _extract_bill_name(self, message: str, bills: list) -> str | None:
+    def _extract_bill_keyword(self, message: str) -> str | None:
         """
-        Extract bill name from user message.
-        Tries to match against known bill names.
+        Extract the bill-type keyword from a user payment message.
+        Strips common filler words and returns the remaining keyword,
+        which is then used for DB-level fuzzy matching (paid + unpaid).
         """
         message_lower = message.lower()
-        
-        # Remove common payment words safely using regex
-        pattern = r"\b(" + "|".join(["pay", "payment", "bill", "bills", "the", "my", "make", "a", "an", "please"]) + r")\b"
-        message_lower = re.sub(pattern, "", message_lower).strip()
-        
-        # Try exact substring match first
-        for bill in bills:
-            if bill.name.lower() in message_lower or message_lower in bill.name.lower():
-                return bill.name
-        
-        # Try fuzzy matching
-        best_match = None
-        best_score = 0
-        
-        for bill in bills:
-            score = fuzz.partial_ratio(message_lower, bill.name.lower())
-            if score > best_score and score > 60:  # 60% threshold
-                best_score = score
-                best_match = bill.name
-        
-        return best_match
+
+        self._log(f"Extracting keyword from: {message_lower}")
+        # Strip common payment/filler words
+        pattern = r"\b(" + "|".join([
+            "pay", "payment", "bill", "bills", "the", "my",
+            "make", "a", "an", "please", "settle", "clear"
+        ]) + r")\b"
+        keyword = re.sub(pattern, "", message_lower).strip()
+        self._log(f"Extracted keyword: '{keyword}'")
+
+        return keyword if keyword else None
+
+    def _log(self, msg):
+        try:
+            with open("app/debug.log", "a") as f:
+                f.write(msg + "\n")
+        except:
+            pass
