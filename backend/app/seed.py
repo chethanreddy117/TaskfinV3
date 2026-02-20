@@ -27,8 +27,10 @@ def seed_db():
     # Create tables (demo-safe)
     # -------------------------------
     try:
+        # For development, we drop and recreate to apply schema changes (like Integer -> String)
+        # Base.metadata.drop_all(bind=engine) 
         Base.metadata.create_all(bind=engine)
-        print("✅ Database tables created")
+        print("✅ Database tables created/updated")
     except Exception as e:
         print(f"❌ Failed to create tables: {str(e)}")
         raise
@@ -42,13 +44,14 @@ def seed_db():
         user = db.query(User).filter_by(username="chethan").first()
         if not user:
             user = User(
+                id="user_chethan_demo", # Explicit string ID
                 username="chethan",
                 password=hash_password("1234"),
             )
             db.add(user)
             db.commit()
             db.refresh(user)
-            print(f"✓ Created demo user: chethan")
+            print(f"✓ Created demo user: chethan (ID: user_chethan_demo)")
         else:
             print(f"✓ Demo user already exists: chethan")
 

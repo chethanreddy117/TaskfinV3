@@ -7,20 +7,31 @@ from app.models import Bill, Account, Transaction, AuditLog
 from app.agents.errors import InsufficientBalanceError, InvalidRequestError
 
 
-def get_unpaid_bills(user_id: int):
-    """Get all unpaid bills for a user"""
+def get_unpaid_bills(user_id: str):
+    """Get all unpaid bills for a user. Seeds default bills for new users."""
     db: Session = SessionLocal()
     try:
         bills = db.query(Bill).filter(
             Bill.user_id == user_id,
-            Bill.status == "UNPAID"
         ).all()
-        return bills
+        
+        # If user has NO bills at all (new user), seed some default ones for demo
+        if not bills:
+            default_bills = [
+                Bill(user_id=user_id, name="Electricity", amount=1200, status="UNPAID"),
+                Bill(user_id=user_id, name="Internet", amount=899, status="UNPAID"),
+                Bill(user_id=user_id, name="Water", amount=450, status="UNPAID"),
+            ]
+            db.add_all(default_bills)
+            db.commit()
+            return default_bills
+            
+        return [b for b in bills if b.status == "UNPAID"]
     finally:
         db.close()
 
 
-def pay_bill_by_id(user_id: int, bill_id: int):
+def pay_bill_by_id(user_id: str, bill_id: int):
     """
     Pay a bill by ID.
     Checks balance, updates bill status, creates transaction record.
@@ -93,8 +104,8 @@ def pay_bill_by_id(user_id: int, bill_id: int):
         db.close()
 
 
-def get_account_balance(user_id: int) -> dict:
-    """Get account balance for a user"""
+def get_account_balance(user_id: str) -> dict:
+    """Get account balance for a user. Creates a default account if not found."""
     db: Session = SessionLocal()
     try:
         account = db.query(Account).filter(
@@ -102,7 +113,16 @@ def get_account_balance(user_id: int) -> dict:
         ).first()
 
         if not account:
-            raise InvalidRequestError("Account not found")
+            # Create a default account for new Clerk users
+            account = Account(
+                user_id=user_id,
+                balance=10000,
+                type="Savings"
+            )
+            db.add(account)
+            db.commit()
+            db.refresh(account)
+            print(f"Created default account for user: {user_id}")
 
         return {
             "balance": account.balance,
@@ -113,7 +133,7 @@ def get_account_balance(user_id: int) -> dict:
         db.close()
 
 
-def get_transaction_history(user_id: int, limit: int = 10) -> list:
+def get_transaction_history(user_id: str, limit: int = 10) -> list:
     """Get transaction history for a user"""
     db: Session = SessionLocal()
     try:
@@ -126,7 +146,7 @@ def get_transaction_history(user_id: int, limit: int = 10) -> list:
         db.close()
 
 
-def find_bill_by_name(user_id: int, bill_name: str):
+def find_bill_by_name(user_id: str, bill_name: str):
     """
     Find a bill by name using fuzzy matching.
     Returns the best matching unpaid bill or None.
@@ -168,7 +188,7 @@ def find_bill_by_name(user_id: int, bill_name: str):
         db.close()
 
 
-def find_paid_bill_by_name(user_id: int, bill_name: str):
+def find_paid_bill_by_name(user_id: str, bill_name: str):
     """
     Find a PAID bill by name using fuzzy matching.
     Used to detect 'already paid' scenarios.
@@ -206,7 +226,7 @@ def find_paid_bill_by_name(user_id: int, bill_name: str):
         db.close()
 
 
-def find_any_bill_by_name(user_id: int, bill_name: str):
+def find_any_bill_by_name(user_id: str, bill_name: str):
     """
     Find ANY bill (paid or unpaid) by name using fuzzy matching.
     Returns the best matching bill or None.
@@ -245,3 +265,10 @@ def find_any_bill_by_name(user_id: int, bill_name: str):
 
     finally:
         db.close()
+
+def pay_bill_by_name(user_id: str, bill_name: str):
+    """Utility function for worker to pay by name"""
+    bill = find_bill_by_name(user_id, bill_name)
+    if not bill:
+        return None
+    return pay_bill_by_id(user_id, bill.id)

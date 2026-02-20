@@ -24,6 +24,7 @@ from sqlalchemy.exc import IntegrityError
 
 from pydantic import BaseModel, Field
 from app.agents.orchestrator import orchestrate
+from app.services.billing_service import get_unpaid_bills, pay_bill_by_id
 
 class RegisterRequest(BaseModel):
     username: str = Field(min_length=3, max_length=50)
@@ -80,13 +81,13 @@ class LoginRequest(BaseModel):
     password: str
 
 @app.get("/bills")
-def list_bills(user_id: int):
+def list_bills(user_id: str):
     return get_unpaid_bills(user_id)
 
 
 @app.post("/bills/pay")
-def pay_bill_api(user_id: int, bill_id: int):
-    return pay_bill(bill_id, user_id)
+def pay_bill_api(user_id: str, bill_id: int):
+    return pay_bill_by_id(user_id, bill_id)
 
 
 

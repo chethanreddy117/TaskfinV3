@@ -3,6 +3,9 @@ from jose import jwt, JWTError
 from fastapi import HTTPException, status
 from app.config import settings
 
+from app.db import SessionLocal
+from app.models import User
+
 # Cache for JWKS
 _jwks_cache = None
 
@@ -21,9 +24,10 @@ def get_jwks():
             return None
     return _jwks_cache
 
-def resolve_user_id(authorization_header: str) -> int:
+def resolve_user_id(authorization_header: str) -> str:
     """
-    Verifies the Clerk session token and returns dummy user ID 1.
+    Verifies the Clerk session token and returns the Clerk User ID (sub).
+    Ensures a User record exists in the local database.
     """
     if not authorization_header:
         raise HTTPException(status_code=401, detail="Missing authorization header")
@@ -57,8 +61,30 @@ def resolve_user_id(authorization_header: str) -> int:
             options={"verify_aud": False}
         )
         
-        # For now, return the dummy ID 1 as requested
-        return 1
+        clerk_user_id = payload.get("sub")
+        if not clerk_user_id:
+            raise HTTPException(status_code=401, detail="Token missing subject (sub)")
+
+        # Ensure user exists in local database
+        db = SessionLocal()
+        try:
+            user = db.query(User).filter(User.id == clerk_user_id).first()
+            if not user:
+                # If you want to fetch more details from Clerk, you'd call Clerk Backend API here.
+                # For now, we'll just create a placeholder user so foreign keys work.
+                # We can use the user's ID as a temporary username or just 'clerk_user'
+                user = User(
+                    id=clerk_user_id,
+                    username=f"user_{clerk_user_id[-6:]}", # Last 6 chars of ID as temporary username
+                    password=None # Clerk users don't have local passwords
+                )
+                db.add(user)
+                db.commit()
+                print(f"Automatically created local User record for Clerk ID: {clerk_user_id}")
+            
+            return clerk_user_id
+        finally:
+            db.close()
 
     except JWTError as e:
         print(f"JWT Verification Error: {e}")

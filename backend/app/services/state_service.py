@@ -7,13 +7,13 @@ HISTORY_TTL = 86400    # 24 hours
 
 # ---------- TASK STATE ----------
 
-def get_state(user_id: int) -> dict:
+def get_state(user_id: str) -> dict:
     """Get user's conversation state from Redis"""
     raw = redis_client.get(f"state:{user_id}")
     return json.loads(raw) if raw else {}
 
 
-def set_state(user_id: int, state: dict, ttl: int = None) -> None:
+def set_state(user_id: str, state: dict, ttl: int = None) -> None:
     """
     Set user's conversation state in Redis.
     
@@ -32,20 +32,20 @@ def set_state(user_id: int, state: dict, ttl: int = None) -> None:
     )
 
 
-def clear_state(user_id: int) -> None:
+def clear_state(user_id: str) -> None:
     """Clear user's conversation state"""
     redis_client.delete(f"state:{user_id}")
 
 
 # ---------- CHAT HISTORY ----------
 
-def get_chat_history(user_id: int) -> list:
+def get_chat_history(user_id: str) -> list:
     """Get chat history for a user"""
     raw = redis_client.get(f"conv:{user_id}")
     return json.loads(raw) if raw else []
 
 
-def save_chat_history(user_id: int, history: list) -> None:
+def save_chat_history(user_id: str, history: list) -> None:
     """Save chat history for a user"""
     redis_client.set(
         f"conv:{user_id}",

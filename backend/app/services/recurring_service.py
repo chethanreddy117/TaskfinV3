@@ -9,7 +9,7 @@ from app.services.redis_client import redis_client
 MONTH = 30 * 24 * 60 * 60
 
 
-def add_recurring(user_id: int, bill: str, amount: int):
+def add_recurring(user_id: str, bill: str, amount: int):
     rule = {
     "bill": bill,
     "amount": amount,
@@ -27,7 +27,7 @@ def add_recurring(user_id: int, bill: str, amount: int):
     )
 
 
-def get_recurring(user_id: int):
+def get_recurring(user_id: str):
     raw = redis_client.hgetall(f"user:{user_id}:recurring")
     return [json.loads(v) for v in raw.values()]
 
@@ -43,14 +43,14 @@ def get_all_recurring():
     result = {}
 
     for key in keys:
-        user_id = int(key.split(":")[1])
+        user_id = key.split(":")[1]
         raw = redis_client.hgetall(key)
         result[user_id] = [json.loads(v) for v in raw.values()]
 
     return result
 
 
-def update_recurring(user_id: int, rule: dict):
+def update_recurring(user_id: str, rule: dict):
     """
     Update an existing recurring rule after execution
     (e.g. update next_run, last_run, status)
@@ -61,7 +61,7 @@ def update_recurring(user_id: int, rule: dict):
         json.dumps(rule),
     )
 
-def pause_recurring(user_id: int, bill: str) -> bool:
+def pause_recurring(user_id: str, bill: str) -> bool:
     key = f"user:{user_id}:recurring"
     raw = redis_client.hget(key, bill)
     if not raw:
@@ -73,7 +73,7 @@ def pause_recurring(user_id: int, bill: str) -> bool:
     return True
 
 
-def resume_recurring(user_id: int, bill: str) -> bool:
+def resume_recurring(user_id: str, bill: str) -> bool:
     key = f"user:{user_id}:recurring"
     raw = redis_client.hget(key, bill)
     if not raw:
@@ -86,6 +86,6 @@ def resume_recurring(user_id: int, bill: str) -> bool:
     return True
 
 
-def stop_recurring(user_id: int, bill: str) -> bool:
+def stop_recurring(user_id: str, bill: str) -> bool:
     key = f"user:{user_id}:recurring"
     return redis_client.hdel(key, bill) == 1

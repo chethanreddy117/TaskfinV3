@@ -13,7 +13,7 @@ class AuditAgent:
 
     def log_event(
         self,
-        user_id: int,
+        user_id: str,
         action: str,
         status: str,
         message: str,
@@ -47,7 +47,7 @@ class AuditAgent:
         finally:
             db.close()
 
-    def get_audit_logs(self, user_id: int, limit: int = 50) -> list:
+    def get_audit_logs(self, user_id: str, limit: int = 50) -> list:
         """Retrieve audit logs for a user"""
         db = SessionLocal()
         try:
@@ -61,7 +61,7 @@ class AuditAgent:
 
 # Legacy function for backward compatibility
 def log_event(
-    user_id: int,
+    user_id: str,
     action: str,
     status: str,
     message: str,

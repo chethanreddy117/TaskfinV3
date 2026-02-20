@@ -5,21 +5,21 @@ from datetime import datetime
 
 class User(Base):
     __tablename__ = "users"
-    id = Column(Integer, primary_key=True)
+    id = Column(String, primary_key=True)
     username = Column(String, unique=True, nullable=False)
-    password = Column(String, nullable=False)
+    password = Column(String, nullable=True)
 
 class Account(Base):
     __tablename__ = "accounts"
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, nullable=False)
+    user_id = Column(String, nullable=False)
     balance = Column(Integer, nullable=False)
     type = Column(String, nullable=False)
 
 class Bill(Base):
     __tablename__ = "bills"
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, nullable=False)
+    user_id = Column(String, nullable=False)
     name = Column(String, nullable=False)
     amount = Column(Integer, nullable=False)
     status = Column(String, nullable=False)
@@ -27,7 +27,7 @@ class Bill(Base):
 class Transaction(Base):
     __tablename__ = "transactions"
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
+    user_id = Column(String, ForeignKey("users.id"))
     bill_name = Column(String)
     amount = Column(Integer)
     status = Column(String)
@@ -37,7 +37,7 @@ class AuditLog(Base):
     __tablename__ = "audit_logs"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, nullable=False)
+    user_id = Column(String, nullable=False)
     action = Column(String, nullable=False)
     status = Column(String, nullable=False)
     message = Column(String, nullable=False)

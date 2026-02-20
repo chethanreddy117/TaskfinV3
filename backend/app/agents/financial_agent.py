@@ -21,7 +21,7 @@ class FinancialAgent:
     def __init__(self):
         self.audit_agent = AuditAgent()
 
-    async def handle(self, user_id: int, message: str) -> AgentResult:
+    async def handle(self, user_id: str, message: str) -> AgentResult:
         """
         Main handler for payment flow with confirmation logic.
         Handles both initial payment request and confirmation response.
@@ -236,7 +236,7 @@ class FinancialAgent:
             data={"bill_id": bill.id, "bill_name": bill.name, "amount": bill.amount}
         )
 
-    async def handle_list_bills(self, user_id: int) -> AgentResult:
+    async def handle_list_bills(self, user_id: str) -> AgentResult:
         """List all unpaid bills for the user"""
         bills = get_unpaid_bills(user_id)
         
@@ -270,7 +270,7 @@ class FinancialAgent:
             data=[{"id": b.id, "name": b.name, "amount": b.amount} for b in bills]
         )
 
-    async def handle_balance(self, user_id: int) -> AgentResult:
+    async def handle_balance(self, user_id: str) -> AgentResult:
         """Check account balance"""
         balance_info = get_account_balance(user_id)
         
@@ -288,7 +288,7 @@ class FinancialAgent:
             data=balance_info
         )
 
-    async def handle_history(self, user_id: int, limit: int = 10) -> AgentResult:
+    async def handle_history(self, user_id: str, limit: int = 10) -> AgentResult:
         """Show transaction history"""
         transactions = get_transaction_history(user_id, limit)
         

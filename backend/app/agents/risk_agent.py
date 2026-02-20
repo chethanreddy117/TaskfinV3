@@ -19,7 +19,7 @@ class RiskAgent:
     def __init__(self):
         self.audit_agent = AuditAgent()
 
-    async def evaluate_payment_risk(self, user_id: int, amount: int) -> dict:
+    async def evaluate_payment_risk(self, user_id: str, amount: int) -> dict:
         """
         Evaluate if a payment is within risk limits.
         Returns dict with 'approved' (bool) and 'reason' (str)
@@ -59,7 +59,7 @@ class RiskAgent:
             "current_count": count
         }
 
-    async def record_payment(self, user_id: int, amount: int) -> None:
+    async def record_payment(self, user_id: str, amount: int) -> None:
         """
         Record a successful payment in risk tracking.
         Updates both amount and count for the day.
@@ -76,7 +76,7 @@ class RiskAgent:
         redis_client.incr(count_key)
         redis_client.expire(count_key, 86400)  # Expire at end of day
 
-    async def handle_risk_status(self, user_id: int) -> AgentResult:
+    async def handle_risk_status(self, user_id: str) -> AgentResult:
         """
         Handle user request to check their risk/spending status.
         Shows current usage vs limits.
@@ -124,7 +124,7 @@ Payments:
 
 # Legacy function for backward compatibility
 def assess_payment_risk(
-    user_id: int,
+    user_id: str,
     bill_name: str,
     amount: int
 ) -> tuple[bool, str]:

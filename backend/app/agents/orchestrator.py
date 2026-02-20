@@ -40,7 +40,7 @@ class Orchestrator:
         self.audit_agent = AuditAgent()
         self.risk_agent = RiskAgent()
 
-    async def route(self, user_id: int, message: str) -> AgentResult:
+    async def route(self, user_id: str, message: str) -> AgentResult:
         """
         Route user message to appropriate agent based on intent detection.
         This is the internal routing method.
@@ -202,7 +202,7 @@ class Orchestrator:
 # Global orchestrator instance
 _orchestrator = None
 
-async def orchestrate(user_id: int, message: str) -> AgentResult:
+async def orchestrate(user_id: str, message: str) -> AgentResult:
     """
     Main entry point for orchestrating user requests.
     This is the async function called by main.py
